@@ -1,5 +1,5 @@
-**The training data can be downloaded from the following link:**
+The training data can be downloaded from the following link:
 
 https://zenodo.org/records/14197522
 
-The correct dataset used in the report is the: train.nc
+The correct dataset used in the report is the train.nc
