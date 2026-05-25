@@ -17,15 +17,23 @@ This report highlights the strengths and weaknesses of different model architect
 
 - **Code**
   - *CNN & FNO:*
-    Contains all the utilities and code for training the quasi-geostrophic turbulence model for the Convolutional Neural Network and for the        Fourier Neural Operator.
+    Contains all the utilities and code for training the quasi-geostrophic turbulence model for the Convolutional Neural Network and for the Fourier Neural Operator.
     **Her skriver Olaf om sin egen allerede kutta fil**
   - *GCN:*
-    Contains all utilities and code for training with a Weighted Chebyshev model, a regular Chebyshev model, a deep architectural Chebyshev         model, and a standard Graph Convolutional Network model.
-    *train.nc* is the NetCdf file used for training the models. 
-  
+    Contains all utilities and code for training with a Weighted Chebyshev model, a regular Chebyshev model, a deep architectural Chebyshev model, and a standard Graph Convolutional Network model.
+    *train.nc* is the NetCdf file used for training the models.
+    To run the scripts, the Python script "run_multi_variable.py" must be sent in. The script calls on all other scripts used for training, such as loss functions, model architecture, and more. To select hyperparameters, the values in the SWEEP can be changed accordingly.
+    The supported models to run using this script are:  'ChebGCN', 'GCN', 'DeepChebGCN' and 'WeightedChebGCN'
+    The configuration file contains information on the parameters that must be specified for the code to run successfully, while the SWEEP parameters, such as penalties, can be changed to zero or, in some cases, False/True.
+    **NOTE:** To run the run_multi_variable script, the other scripts within Code -> GCN -> must be downloaded in the same folder to successfully import the scripts. 
+  - *Validation*
+    Contains the script to run inference and to plot the results. The KE notebook includes a theoretical view of how the kinetic energy spectrum is calculated.
     
 - **Report**
   This section contains the report in a PDF file.
+
+- **Report**
+  The Figures folder contains all figures that have been plotted and that are used in the report. 
   
 - **LLM**
   A declaration of Artificial Intelligence is given. 
