@@ -104,7 +104,7 @@ def _rollout_all_vars(model, test_loader, device, window_size,
     targets ndarray:  ground truth (tragets) fields with shape (N, n_target_vars, forecast_horizon, H, W) in z-score normalised scale
     """
     model.eval()
-    all_preds   = [], all_targets = []
+    all_preds, all_targets = [], []
     n_tv = len(TARGET_VARS)
 
 #Iterate over test batches
