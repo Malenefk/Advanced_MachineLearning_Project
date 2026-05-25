@@ -3,7 +3,10 @@
 
 This GitHub site is dedicated to the Machine Learning FYS5429 project. This Readme contains information on the folder structure of the GitHub page, the necessary information for reproducing results, and the paper abstract. 
 
-# Upload pic here for visuallllziing (jeg fikser)
+**Animations - Preview of the dataset used**
+
+/Users/malenekarlsen/Documents/Master/Vår26/MachineLearning/Advanced_ML/turbulence_animation_psi.gif
+/Users/malenekarlsen/Documents/Master/Vår26/MachineLearning/Advanced_ML/turbulence_animation_q.gif
 
 **Abstract**
 
