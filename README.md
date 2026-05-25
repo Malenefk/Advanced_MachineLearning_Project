@@ -38,7 +38,7 @@ This report highlights the strengths and weaknesses of different model architect
 - **Report**
   This section contains the report in a PDF file.
 
-- **Report**
+- **Figures**
   The Figures folder contains all figures that have been plotted and that are used in the report. 
   
 - **LLM**
