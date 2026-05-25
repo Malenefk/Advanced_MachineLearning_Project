@@ -5,8 +5,11 @@ This GitHub site is dedicated to the Machine Learning FYS5429 project. This Read
 
 **Animations - Preview of the dataset used**
 
-/Users/malenekarlsen/Documents/Master/Vår26/MachineLearning/Advanced_ML/turbulence_animation_psi.gif
-/Users/malenekarlsen/Documents/Master/Vår26/MachineLearning/Advanced_ML/turbulence_animation_q.gif
+
+<img width="840" height="600" alt="turbulence_animation_q_sp50" src="https://github.com/user-attachments/assets/f2b69ef7-0dce-48ec-9ccb-ac9126c44ed3" />
+<img width="840" height="600" alt="turbulence_animation_psi_sp50" src="https://github.com/user-attachments/assets/cbaaecec-f263-4da2-84d1-d2b4c3dface9" />
+
+
 
 **Abstract**
 
