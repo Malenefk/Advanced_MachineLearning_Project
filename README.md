@@ -28,6 +28,7 @@ This report highlights the strengths and weaknesses of different model architect
     **NOTE:** To run the run_multi_variable script, the other scripts within Code -> GCN -> must be downloaded in the same folder to successfully import the scripts. 
   - *Validation*
     Contains the script to run inference and to plot the results. The KE notebook includes a theoretical view of how the kinetic energy spectrum is calculated.
+    The validation scripts run for all results using a main function, while the inference must be run for specific trainings, and there are configurations at the beginning of the file that must be manually updated based on the filepath location.
     
 - **Report**
   This section contains the report in a PDF file.
