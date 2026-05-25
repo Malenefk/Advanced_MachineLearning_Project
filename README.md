@@ -3,7 +3,7 @@
 
 This GitHub site is dedicated to the Machine Learning FYS5429 project. This Readme contains information on the folder structure of the GitHub page, the necessary information for reproducing results, and the paper abstract. 
 
-# Upload pic here for visuallllziing
+# Upload pic here for visuallllziing (jeg fikser)
 
 **Abstract**
 
@@ -18,9 +18,11 @@ This report highlights the strengths and weaknesses of different model architect
 - **Code**
   - *CNN & FNO:*
     Contains all the utilities and code for training the quasi-geostrophic turbulence model for the Convolutional Neural Network and for the        Fourier Neural Operator.
+    **Her skriver Olaf om sin egen allerede kutta fil**
   - *GCN:*
     Contains all utilities and code for training with a Weighted Chebyshev model, a regular Chebyshev model, a deep architectural Chebyshev         model, and a standard Graph Convolutional Network model.
-  - *train.nc* is the NetCdf file used for training the models. 
+    *train.nc* is the NetCdf file used for training the models. 
+  
     
 - **Report**
   This section contains the report in a PDF file.
