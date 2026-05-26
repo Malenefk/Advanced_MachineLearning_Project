@@ -1,22 +1,9 @@
-""" metrics.py — FULL Metric evaluation on test set.
-
-Contains:
-  * _denorm_var             — inverse z-score 
-  * _rmse                   — root mean squared error
-  * _mae                    — mean absolute error
-  * _mase                   — mean absolute scaled error
-  * _rollout_all_vars       — free-run rollout
-  * _compute_all_metrics    — full metric suite """
-
-#libraries
 from typing import Dict
 import numpy as np
 import torch
 from dataset import TARGET_VARS
 from utils import slide_window
 
-
-#helpers functions
 
 # denormalisation from z-score to its physical space for each variable
 def _denorm_var(arr: np.ndarray, y_mean, y_std, var_idx: int) -> np.ndarray:
@@ -36,7 +23,7 @@ def _denorm_var(arr: np.ndarray, y_mean, y_std, var_idx: int) -> np.ndarray:
     std_v  = float(np.asarray(y_std ).reshape(-1)[var_idx])
     return arr * std_v + mean_v
 
-# Metrics compuation functions: RMSE, MAE and MASE
+#metrics compuation functions: RMSE, MAE and MASE
 def _rmse(a: np.ndarray, b: np.ndarray) -> float:
     """ Compute Root Mean Squared Error for two arrays
 
@@ -83,7 +70,7 @@ def _mase(pred: np.ndarray, target: np.ndarray) -> float:
 
 
 
-#Rollout
+#rollout
 @torch.no_grad()
 def _rollout_all_vars(model, test_loader, device, window_size,
                       forecast_horizon) -> tuple:
@@ -107,20 +94,19 @@ def _rollout_all_vars(model, test_loader, device, window_size,
     all_preds, all_targets = [], []
     n_tv = len(TARGET_VARS)
 
-#Iterate over test batches
+#iterate over test batches
     for x, y in test_loader:
         x, y  = x.to(device), y.to(device)
         x_cur = x.clone()
         step_preds = []  
-#Iterate over forecast steps
+#iterate over forecast steps
         for _ in range(forecast_horizon):
             pred = model(x_cur)   
             step_preds.append(pred.cpu().numpy())
             x_cur = slide_window(x_cur, pred, window_size, list(TARGET_VARS), list(TARGET_VARS))
 
-# step_preds: list[T] of (B, n_tv, H, W) -> (B, n_tv, T, H, W)
+
         preds_np = np.stack(step_preds, axis=2)  
-# Ground truth, y is (B, n_tv * T, H, W)
         targs_np = np.stack(
             [y[:, v * forecast_horizon : (v + 1) * forecast_horizon].cpu().numpy()
              for v in range(n_tv)],
@@ -136,8 +122,7 @@ def _rollout_all_vars(model, test_loader, device, window_size,
 
 
 
-#Metrics computaion functions
-
+#metrics computaion functions
 def _compute_all_metrics(preds_norm: np.ndarray,
                          targets_norm: np.ndarray,
                          norm_stats: dict,
@@ -173,16 +158,16 @@ def _compute_all_metrics(preds_norm: np.ndarray,
         targets = targets_norm
 
 
-# Overall common metrics for the model all variables and steps togethers
+# overall common metrics for the model all variables and steps togethers
     overall_rmse = _rmse(preds, targets)
     overall_mae  = _mae(preds, targets)
 
-# Flatten to (N, n_tv*T, H*W) for MASE computation
+# flatten to (N, n_tv*T, H*W) for MASE computation
     p_flat = preds.reshape(N, n_tv * T, -1)
     t_flat = targets.reshape(N, n_tv * T, -1)
     overall_mase = _mase(p_flat, t_flat)
 
-# Accumulated RMSE over the whole forcast horizion
+# accumulated RMSE over the whole forcast horizion
     per_step_mse = [
         float(np.mean((preds[:, :, s] - targets[:, :, s]) ** 2))
         for s in range(T)
@@ -190,7 +175,7 @@ def _compute_all_metrics(preds_norm: np.ndarray,
     accum_rmse = float(np.sqrt(np.mean(per_step_mse)))
 
 
-# Per step metrices for all variables
+# per step metrices for all variables
  
     per_step = {}
     for s in range(T):
@@ -200,12 +185,10 @@ def _compute_all_metrics(preds_norm: np.ndarray,
         }
 
 
-    # Per step and per variable metrices
-    
+    # per step and per variable metrices    
     per_var = {}
     amplitude_collapse = {}
     
-    #Iterate over all variables
     for v, vname in enumerate(TARGET_VARS):
         p_v = preds  [:, v]    # (N, T, H, W)
         t_v = targets[:, v]
@@ -213,9 +196,8 @@ def _compute_all_metrics(preds_norm: np.ndarray,
         var_rmse  = _rmse(p_v, t_v)
         step_rmse = [_rmse(p_v[:, s], t_v[:, s]) for s in range(T)]
 
-# Amplitude collapse: pred_std divided on target_std 
+# amplitude collapse: pred_std divided on target_std 
         std_ratio = []
-        #Iterate over forecast steps
         for s in range(T):
             p_std = float(np.std(p_v[:, s]))
             t_std = float(np.std(t_v[:, s]))
@@ -231,7 +213,7 @@ def _compute_all_metrics(preds_norm: np.ndarray,
             "mean_std_ratio":     float(np.mean(std_ratio)),
         }
 
-# Return the full metric table as dict. 
+# return the full metric table as dict. 
     return {
         "overall": {
             "rmse":       overall_rmse,
@@ -241,5 +223,4 @@ def _compute_all_metrics(preds_norm: np.ndarray,
         },
         "per_step":           per_step,
         "per_var":            per_var,
-        "amplitude_collapse": amplitude_collapse,
-    }
+        "amplitude_collapse": amplitude_collapse,}

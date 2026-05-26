@@ -1,11 +1,3 @@
-"""moving_average_baseline.py: Simple moving-average baseline for prediction of ocean turbulence.
-Run: python moving_average_baseline.py
-
-Does four things:
-1. loads test data using dataset.py ->  2. predicts the next 4 timesteps using a moving average
-3. computes metrics using metrics.py -> 4. saves metrics.json and predictions.npz"""
-
-
 import argparse
 import json
 import os
@@ -21,7 +13,7 @@ from dataset import (
 )
 from metrics import _compute_all_metrics
 
-#Pre-preparation to be make data compatible with JSON formating
+#pre-preparation to be make data compatible
 def _to_jsonable(obj):
     """Convert numpy arrays inside nested dicts to be JSON safe formating in python types
     
@@ -45,7 +37,7 @@ def _to_jsonable(obj):
         return obj.item()
     return obj
 
-#Get data
+#get data
 def _target_frame_from_y(y, step, forecast_horizon, n_target_vars):
     """Extract one target frame from y
 
@@ -64,7 +56,7 @@ def _target_frame_from_y(y, step, forecast_horizon, n_target_vars):
         dim=1,)
 
 
-# Update input window for next forcast, and forward slidning 
+# update input window for next forcast, and forward slidning 
 def _slide_window(x_cur, pred, window_size, input_vars, target_vars):
     """Slide the input window forward by one step after one prediction
     
@@ -99,7 +91,7 @@ def _slide_window(x_cur, pred, window_size, input_vars, target_vars):
     return torch.cat(parts, dim=1)
 
 
-# Create a simple moving average for prediction
+# create a simple moving average for prediction
 def moving_average_rollout(test_loader, window_size, forecast_horizon, input_vars, target_vars, ma_window,):
     """ Run simple moving average rollout for full test set
     
@@ -160,7 +152,7 @@ def moving_average_rollout(test_loader, window_size, forecast_horizon, input_var
     targets_norm = np.concatenate(all_targets, axis=0)
     return preds_norm, targets_norm
 
-#Denormalization of variables
+#denormalization of variables
 def denormalise_all_vars(arr_norm, norm_stats):
     """ Convert normalised array back to physical units.
 
@@ -184,7 +176,7 @@ def denormalise_all_vars(arr_norm, norm_stats):
 
     return arr_phys
  
-#Create simple moving average model
+# create simple moving average model
 def main():
     """ Run whole moving average baseline on test set
     load test data, run simple moving average, compute metrices, save results into the output folder.
@@ -216,8 +208,7 @@ def main():
         target_vars=TARGET_VARS,
         window=WINDOW_SIZE,
         out_steps=forecast_horizon,
-        batch_size=batch_size,
-    )
+        batch_size=batch_size,)
 
     preds_norm, targets_norm = moving_average_rollout(
         test_loader=test_loader,
@@ -225,8 +216,7 @@ def main():
         forecast_horizon=forecast_horizon,
         input_vars=list(INPUT_VARS),
         target_vars=list(TARGET_VARS),
-        ma_window=ma_window,
-    )
+        ma_window=ma_window,)
 
     metrics_norm = _compute_all_metrics(preds_norm, targets_norm, norm_stats, space="norm")
     metrics_phys = _compute_all_metrics(preds_norm, targets_norm, norm_stats, space="phys")
@@ -250,8 +240,7 @@ def main():
                 "phys": _to_jsonable(metrics_phys),
             },
             f,
-            indent=2,
-        )
+            indent=2,)
 #result into .npz
     np.savez_compressed(
         predictions_path,
@@ -260,15 +249,13 @@ def main():
         preds_phys=preds_phys,
         targets_phys=targets_phys,
         input_vars=np.array(list(INPUT_VARS)),
-        target_vars=np.array(list(TARGET_VARS)),
-    )
+        target_vars=np.array(list(TARGET_VARS)),)
 
     print(f"Saved metrics      -> {metrics_path}")
     print(f"Saved predictions  -> {predictions_path}")
     print(f"Prediction shape   -> {preds_norm.shape}")
     print(f"Overall RMSE norm  -> {metrics_norm['overall']['rmse']:.6f}")
     print(f"Overall RMSE phys  -> {metrics_phys['overall']['rmse']:.6e}")
-
 
 if __name__ == "__main__":
     main()
