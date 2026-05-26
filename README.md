@@ -23,7 +23,13 @@ This report highlights the strengths and weaknesses of different model architect
 - **Code**
   - *CNN & FNO:*
     Contains all the utilities and code for training the quasi-geostrophic turbulence model for the Convolutional Neural Network and for the Fourier Neural Operator.
-    **Her skriver Olaf om sin egen allerede kutta fil**
+    Codes used in folder CNN_and_FNO are configured to use the pre-processed data (with no-spin up phase). To train, evalute and obtain metrices for each of the combinations of loss function for both FNO and UNET sweep.py, can be run by CLI command "python sweep.py"
+    For seperate traning CLI code such as "python train.py --model X --loss Y", where X is model name, either "fno" or "unet", and Y is name of the loss function "mse", "weighted_mse","mse_grad", "mse_mean_constraint" or "combined_physics"
+    Evaluation can be done corresponding by CLI code "python test.py --checkpoint sweep_results/X_Y/best_model.pt".
+" 
+  - *MovingAvg_baseline:*
+
+
   - *GCN:*
     Contains all utilities and code for training with a Weighted Chebyshev model, a regular Chebyshev model, a deep architectural Chebyshev model, and a standard Graph Convolutional Network model.
     *train.nc* is the NetCdf file used for training the models.
