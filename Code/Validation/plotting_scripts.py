@@ -50,11 +50,11 @@ model_colors  = ['#7B3F9E', '#2E7D32', '#1565C0', '#9F3E3E']
 
 # Computational cost — fill in numbers manually from training updates 
 comp_cost = {
-    'models'        : ['FNO\n(Weighted MSE)', 'UNet\n(Physics Loss)',
+    'models' : ['FNO\n(Weighted MSE)', 'UNet\n(Physics Loss)',
                        'WeightedChebGCN\n(Grad MSE)', 'GCN\n(Grad MSE)'],
-    'training_time' : [19.3, 16.0, 231, 132],   # minutes
-    'inference_time': [5.59, 5.1, 8.27, 4.33],  # seconds
-    'peak_memory'   : [675.3, 585.5, 894.6, 791.2],  # Megabytes
+    'training_time' : [19.3, 16.0, 231, 132], # minutes
+    'inference_time': [5.59, 5.1, 8.27, 4.33], # seconds
+    'peak_memory' : [675.3, 585.5, 894.6, 791.2], # Megabytes
 }
 
 y_grid, x_grid = 64, 64
