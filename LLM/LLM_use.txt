@@ -1,6 +1,6 @@
 For this project, Artificial Intelligence (AI) has been used for the following purposes:
 
-- Help with code structure and to improve the efficiency of the code. 
+- Help with code debugging, structure and to improve the efficiency of the code. 
 - AI has been used for grammar checks in the written report. The text is written by us, but AI has helped in improving grammar and structure.
 - Help to brainstorm ideas for model architectures and to summarize relevant research articles. 
 - AI has been used to help efficiently create validation plots. 
