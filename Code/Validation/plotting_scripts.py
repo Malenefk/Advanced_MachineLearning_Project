@@ -27,18 +27,18 @@ data_path   = 'filepath_train.nc'
 
 # result_paths: please provide all file paths as a directory where the name given is used in the plots 
 result_paths = {
-    'FNO WeightedMSE'          : 'filepath_to_fno_results',
-    'Unet CombinedPhysics'     : 'filepath_to_unet_results',
-    'WeightedChebGCN GradMSE'  : 'filepath_to_wchebgcn_results',
-    'GCN GradMSE'              : 'filepath_to_gcn_results',
+    'FNO WeightedMSE' : 'filepath_to_fno_results',
+    'Unet CombinedPhysics': 'filepath_to_unet_results',
+    'WeightedChebGCN GradMSE': 'filepath_to_wchebgcn_results',
+    'GCN GradMSE' : 'filepath_to_gcn_results',
 }
 
 # loss paths for the loss functions 
 loss_paths= {
-    'FNO WeightedMSE'          : 'filepath_fno_results',
-    'Unet CombinedPhysics'     : 'filepath_unet_results',
-    'WeightedChebGCN GradMSE'  : 'filepath_wchebgcn_results',
-    'GCN GradMSE'              : 'filepath_gcn_results',
+    'FNO WeightedMSE' : 'filepath_fno_results',
+    'Unet CombinedPhysics' : 'filepath_unet_results',
+    'WeightedChebGCN GradMSE': 'filepath_wchebgcn_results',
+    'GCN GradMSE' : 'filepath_gcn_results',
 }
 
 # for the scatter plots 
@@ -48,7 +48,7 @@ scatter_model_name = 'FNO WeightedMSE'
 channel_names= ['ψ lev 1', 'ψ lev 2', 'q lev 1', 'q lev 2']
 model_colors  = ['#7B3F9E', '#2E7D32', '#1565C0', '#9F3E3E']
 
-# Computational cost — fyll inn dine tall
+# Computational cost — fill in numbers manually from training updates 
 comp_cost = {
     'models'        : ['FNO\n(Weighted MSE)', 'UNet\n(Physics Loss)',
                        'WeightedChebGCN\n(Grad MSE)', 'GCN\n(Grad MSE)'],
