@@ -1,41 +1,3 @@
-"""
-train.py — training loop, iterative autoregressive rollout
-
-Commands CLI for start:
-    python train.py -- model_name [unet, fno] --loss function [mse, weighted_mse, loss mse_grad, mse_mean_constraint, combined_physics] --resume if continue
-
-
-Outputs are written into: sweep_results/<model_name>_<loss_function>/...
---------------------------------------------------------------------------
-What is saved:
-    best_model.pt   — best validation checkpoint (follows: weights, norm_stats and it's config)
-    last_model.pt   — last epoch checkpoint (supports --resume, for traning after interruption)
-    history.csv     — epoch level traning loss, validation loss, learning rate, epoch time and
-                      values for loss functions's lambda components.
-    config.json     — all hyperparameters, number of parameters, best validation loss, training time, peak memory usage while training,
-                      loss parameteres.
-
-Scheduled sampling:
-  Scheduled sampling (given by ss_ratio) defines percentages of how often model swaps groundruth with its own
-  predictions back under tranin. The swaps happen per step, not by batch.
-  * 0 = Usesonly ground truth frames.
-  * 0.6= 60% of the time, model use own predictions.
-  * 1 = uses only own predictions
-  
-Progressive ss ratio warmup:
-  Makes the model start with ground truth early, and go towards the desired ss_ratio by X epochs given by ss_warmup_epochs
-
-Gradient clipping:
-  Mitigate lagre gradient spikes early in traning, gradient clipping at 1.0 used as deafult.
-
-Possible loss functions:
-    mse                 — Mean Squared Error (default)
-    weighted_mse        — MSE with per channel weigthing 
-    mse_grad            — MSE with spatial gradient penalty
-    mse_mean_constraint — MSE with spatial mean conservation penalty
-    combined_physics    — MSE with weigthing, gradient, mean constraint and standard deviation penalty
-"""
-
 import argparse
 import json
 import os
@@ -45,13 +7,10 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
 from config import TRAIN_CFG, DATA_CFG, MODEL_CFGS, LOSS_PARAMS, get_device
 from dataset import get_dataloaders, DATA_PATH, INPUT_VARS, TARGET_VARS, WINDOW_SIZE
 from losses import LOSS_REGISTRY
 from utils import slide_window, create_model
-
-#Hyperparameters
 BATCH_SIZE       = TRAIN_CFG["batch_size"]
 LR               = TRAIN_CFG["lr"]
 MAX_EPOCHS       = TRAIN_CFG["max_epochs"]
@@ -66,7 +25,6 @@ SS_RATIO         = DATA_CFG["ss_ratio"]
 SS_WARMUP_EPOCHS = DATA_CFG.get("ss_warmup_epochs", 0)
 
 
-#Get the current ratio of scheduled sampling, based on the selected warmup
 def get_current_ss_ratio(epoch: int) -> float:
     """ Compute scheduled sampling ratio for give traning epoch.
     Linearly warm up of schedueled sampling ratio. After warmup ss_ratio holds constant for rest of the traning.
@@ -80,8 +38,7 @@ def get_current_ss_ratio(epoch: int) -> float:
     return min(SS_RATIO, SS_RATIO * epoch / SS_WARMUP_EPOCHS)
 
 
-# Schemeatic function for traning an epoch.
-
+    # schemeatic function for traning an epoch.
 def train_one_epoch(model, loader, optimizer, device, loss_fn, loss_params,
                     window_size, forecast_horizon, ss_ratio):
     """
@@ -117,8 +74,6 @@ def train_one_epoch(model, loader, optimizer, device, loss_fn, loss_params,
         x_cur          = x.clone()
         step_loss      = torch.tensor(0.0, device=device)
         batch_comps    = {}
-
-#Time step training loop
         for step in range(forecast_horizon):
             pred = model(x_cur)   
 
@@ -136,7 +91,7 @@ def train_one_epoch(model, loader, optimizer, device, loss_fn, loss_params,
                 batch_comps[k] = batch_comps.get(k, 0.0) + step_weight * v
 
 
-            # Random use of scheduled sampling, based on its percerntages in current get_current_ss_ratio. 
+            # random use of scheduled sampling, based on its percerntages in current get_current_ss_ratio. 
             use_pred   = torch.rand(1).item() < ss_ratio
             next_frame = pred.detach() if use_pred else gt_frame
             x_cur      = slide_window(x_cur, next_frame, window_size, INPUT_VARS, TARGET_VARS)
@@ -144,7 +99,7 @@ def train_one_epoch(model, loader, optimizer, device, loss_fn, loss_params,
         weight_sum = sum(1.0 + s / max(1, forecast_horizon - 1) for s in range(forecast_horizon))
         loss       = step_loss / weight_sum
 
-        # Averaged components losses for the epoch.
+        #averaged components losses for the epoch.
         for k in batch_comps:
             batch_comps[k] /= weight_sum
             component_totals[k] = component_totals.get(k, 0.0) + batch_comps[k]
@@ -161,7 +116,7 @@ def train_one_epoch(model, loader, optimizer, device, loss_fn, loss_params,
 
 
 
-# Validation loop
+# validation loop
 @torch.no_grad()
 def validate(model, loader, device, loss_fn, loss_params, window_size, forecast_horizon):
     """Validation loop: Runs a free rollout, only validated on its own predictions.
@@ -182,13 +137,13 @@ def validate(model, loader, device, loss_fn, loss_params, window_size, forecast_
     total_loss    = 0.0
     n_target_vars = len(TARGET_VARS)
 
-#Iterate over each batch
+#iterate over each batch
     for x, y in loader:
         x, y  = x.to(device), y.to(device)
         x_cur = x.clone()
         step_loss = torch.tensor(0.0, device=device)
 
-#iterate over each step in forecast horizon
+#iterate over each step in forecast horizon...
         for step in range(forecast_horizon):
             pred     = model(x_cur)
             gt_frame = torch.cat(
@@ -207,7 +162,7 @@ def validate(model, loader, device, loss_fn, loss_params, window_size, forecast_
 
 
 
-# #Main traning loop
+# #main traning loop
 
 def train(model_name: str = None, loss_name: str = None,
           run_dir: str = None, resume: bool = False):
@@ -228,7 +183,7 @@ def train(model_name: str = None, loss_name: str = None,
     peak_mem_mb float: peak GPU memory usage in MB, or RSS for CPUs
     best_val float: best validation loss achieved
     """
-    #Initialization and setup
+
     if model_name is None:
         model_name = DEFAULT_MODEL
     if loss_name is None:
@@ -277,7 +232,7 @@ def train(model_name: str = None, loss_name: str = None,
     optimizer = Adam(model.parameters(), lr=LR)
     scheduler = ReduceLROnPlateau(optimizer, patience=5, factor=0.5)
 
-    # Reset GPU memory stats, runs only on cuda GPU devices
+    # reset GPU memory stats, runs only on cuda GPU devices
     if DEVICE == "cuda":
         torch.cuda.reset_peak_memory_stats()
 
@@ -287,7 +242,7 @@ def train(model_name: str = None, loss_name: str = None,
     history     = {"train": [], "val": [], "lr": [], "time": [], "components": []}
     train_start = time.time()
 
-#Resume traning from last checkpoint.
+#resume traning from last checkpoint.
     last_ckpt = os.path.join(run_dir, "last_model.pt")
     if resume and os.path.exists(last_ckpt):
         print(f"Resuming from checkpoint: {last_ckpt}")
@@ -303,7 +258,7 @@ def train(model_name: str = None, loss_name: str = None,
     elif resume:
         print(f"No checkpoint at '{last_ckpt}', starting from scratch.\n")
 
-#Traning loop and validation for each epoch.
+#traning loop and validation for each epoch.
     for epoch in range(start_epoch, MAX_EPOCHS + 1):
         t0         = time.time()
         current_ss = get_current_ss_ratio(epoch)
@@ -341,7 +296,7 @@ def train(model_name: str = None, loss_name: str = None,
             out_steps=1, input_vars=list(INPUT_VARS), target_vars=list(TARGET_VARS),
             forecast_horizon=FORECAST_HORIZON, ss_ratio=SS_RATIO,
         )
-#Update best model checkpoint if best validation loss achived
+#update best model checkpoint if best validation loss 
         if val_loss < best_val:
             best_val   = val_loss
             no_improve = 0
@@ -359,7 +314,7 @@ def train(model_name: str = None, loss_name: str = None,
                     "history": history},
                    last_ckpt)
 
-#Early stopping
+#early stopping
         if PATIENCE > 0 and no_improve >= PATIENCE:
             print(f"\nEarly stopping after {PATIENCE} epochs without improvement.")
             break
@@ -375,18 +330,17 @@ def train(model_name: str = None, loss_name: str = None,
         except ImportError:
             peak_mem_mb = float("nan")
 
- # Reload best weights, in case of early stopping or last epoch not being the best.
+ # reload best weights, in case of early stopping or last epoch not being the best.
     best_ckpt = torch.load(os.path.join(run_dir, "best_model.pt"), map_location=DEVICE)
     model.load_state_dict(best_ckpt["model_state"])
 
-# Save history logs
     hist_df = pd.DataFrame({
         "epoch":      list(range(1, len(history["train"]) + 1)),
         "train_loss": history["train"],
         "val_loss":   history["val"],
         "lr":         history["lr"],
-        "time_s":     history["time"],
-    })
+        "time_s":     history["time"],})
+    
     if history["components"] and loss_params:
         #only for losses with lambda components
         comp_keys = sorted(history["components"][0].keys())
@@ -394,7 +348,6 @@ def train(model_name: str = None, loss_name: str = None,
             hist_df[f"comp_{k}"] = [ep.get(k, float("nan")) for ep in history["components"]]
     hist_df.to_csv(os.path.join(run_dir, "history.csv"), index=False)
 
-# Save config into JSON
     cfg_out = dict(
         model=model_name, loss=loss_name,
         loss_params=loss_params,
@@ -426,22 +379,22 @@ def train(model_name: str = None, loss_name: str = None,
 # CLI commands
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Train one (model, loss) combination for ocean turbulence forecasting."
+        description="train one (models, loss) combination"
     )
     parser.add_argument(
         "--model", type=str, default=DEFAULT_MODEL, choices=["unet", "fno"],
-        help=f"Model to train (default: '{DEFAULT_MODEL}' from TRAIN_CFG)",
+        help=f"train default: '{DEFAULT_MODEL}'",
     )
     parser.add_argument(
         "--loss", type=str, default=DEFAULT_LOSS, choices=sorted(LOSS_REGISTRY.keys()),
-        help=f"Loss function (default: '{DEFAULT_LOSS}')",
+        help=f"loss function (default: '{DEFAULT_LOSS}')",
     )
     parser.add_argument(
         "--run_dir", type=str, default=None,
-        help="Output directory (default: sweep_results/model_name_loss_fn)",
+        help="output directory is sweep_results/model_name_loss_fn",
     )
     parser.add_argument("--resume", action="store_true",
-                        help="Resume from last_model.pt saved in run_dir")
+                        help="resume from last_model.pt saved in run_dir")
     args = parser.parse_args()
     train(model_name=args.model, loss_name=args.loss,
           run_dir=args.run_dir, resume=args.resume)

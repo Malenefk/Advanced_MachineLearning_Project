@@ -1,34 +1,9 @@
-"""
-dataset.py — processing and splitting.
-
-Data shape file .nc format: NetCDF (run, time, lev, y=64, x=64) X
-
-Channel layout:
-    Input: (n_input_vars *  window_size, H, W)
-    channel = var_idx * window_size + time_offset
-    vars=[q_lev0, psi_lev1] and window=4:
-        * ch 0-7  -> q_lev0, oldest -> newest
-        * ch 8-15 -> psi_lev1, oldest-> newest
-
-        
-Target Y: (n_target_vars * out_steps, H, W)
-  channel = var_idx * out_steps + time_offset
-        * ch 0 -> 1 step ahead, ch 3 -> 4 steps ahead
-
-  
-Level selection:
-    Variable-level selection is handled via a suffix "X_levY", where X is given variable name, and Y is their level number.
-    Possible values are: "q_lev0", "q_lev1", "psi_lev0", "psi_lev1".
-    
-"""
-
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 import xarray as xr
 from config import DATA_CFG
 
-#Imporning hyperparameter configs from config.py
 DATA_PATH   = DATA_CFG["data_path"]
 WINDOW_SIZE = DATA_CFG["window_size"]
 OUT_STEPS   = DATA_CFG["forecast_horizon"] 
@@ -38,7 +13,7 @@ TRAIN_END   = DATA_CFG["train_end"]
 VAL_END     = DATA_CFG["val_end"]
 
 
-#Extract and convert varibles names
+#extract and convert varibles names
 def _parse_var_name(name):
     """Parse variable names from string into name and level. Split 'q_lev0' -> ('q', 0)
     
@@ -92,7 +67,7 @@ def load_and_split(data_path, input_vars, target_vars):
             raise ValueError(f"Level {lev} not available for '{base}' (has {arr.shape[2]} levels).")
         return arr[:, :, lev, :, :] 
 
-    #Stack channels infot format -> (run, time, n_vars, H, W)
+    #stack channels infot format -> (run, time, n_vars, H, W)
     inputs  = np.stack([get_channel(v) for v in input_vars],  axis=2).astype(np.float32)
     targets = np.stack([get_channel(v) for v in target_vars], axis=2).astype(np.float32)
 
@@ -100,7 +75,7 @@ def load_and_split(data_path, input_vars, target_vars):
     x_train, x_val, x_test = inputs[:TRAIN_END],  inputs[TRAIN_END:VAL_END],  inputs[VAL_END:]
     y_train, y_val, y_test = targets[:TRAIN_END], targets[TRAIN_END:VAL_END], targets[VAL_END:]
 
-    # Normalise using training statistics only, standarization by z-score
+    # normalise using training statistics only, standarization by z-score
     def norm_stats_for(arr):
         """Compute z-score normalisation statstics for given array
         

@@ -1,21 +1,3 @@
-"""test.py — Evaluation and visualisation for trained models.
-
-Usage example:
-    python test.py --checkpoint sweep_results/fno_combined_physics/best_model.pt
-
-Outputs:
-    metrics.json        — normalised and physical scaled metrics.
-    figures/
-      rmse_per_step.png         per step RMSE through forecast horizon
-      std_ratio.png             amplitude-collapse through forecast horizon
-      sample_XXX.png            input / prediction / ground-truth panels
-
-Metrics computed:
-overall  : RMSE, MAE, MASE and accumulated RMSE
-per_step : RMSE and MAE for t+1 … t+T
-per_var  : RMSE,  MAE and per step RMSE for each target variable
-amplitude: pred_std / target_std per step per variable
-"""
 import argparse
 import json
 import os
@@ -23,20 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-
 from config import TRAIN_CFG, EVAL_CFG, LOSS_PARAMS, get_device
 from dataset import get_dataloaders, DATA_PATH
 from metrics import _rollout_all_vars, _compute_all_metrics, _denorm_var
 from utils import create_model
-
-
 BATCH_SIZE    = EVAL_CFG["batch_size"]
 N_SAMPLES     = EVAL_CFG["n_samples"]
 DEVICE        = get_device(TRAIN_CFG)
 
-
-
-#Define function for creating and saving plots
 
 def save_sample_figure(sample_idx: int, x_input: np.ndarray,
                        pred: np.ndarray, target: np.ndarray,
@@ -181,9 +157,6 @@ def save_std_ratio_figure(metrics_norm: dict,
     print(f"  Saved {path}")
 
 
-
-#Summary table for console output
-
 def _print_summary(metrics_norm: dict, metrics_phys: dict,
                    forecast_horizon: int, target_vars: list):
     """Print a metric simple table
@@ -220,8 +193,7 @@ def _print_summary(metrics_norm: dict, metrics_phys: dict,
         print(f"  {vname:<14}  model={mv:.4e}  mean_std_ratio={sr:.3f}")
 
 
-# Main evaluation function 
-
+# main evaluation 
 def evaluate(checkpoint_path: str):
     """Evaluate and save metrices for saved model.
     
@@ -287,12 +259,12 @@ def evaluate(checkpoint_path: str):
 
 
 
-    #Rollout predictions for all test samples
+#rollout predictions for all test samples
     preds_norm, targets_norm = _rollout_all_vars(
         model, test_loader, DEVICE, window_size, forecast_horizon,
     ) 
 
-    #Collect all input batches from test loader
+#collect all input batches from test loader
     
     all_inputs = []
     for x, _ in test_loader:
@@ -303,10 +275,7 @@ def evaluate(checkpoint_path: str):
 
     metrics_norm = _compute_all_metrics(preds_norm, targets_norm, norm_stats, space="norm")
     metrics_phys = _compute_all_metrics(preds_norm, targets_norm, norm_stats, space="phys")
-
     _print_summary(metrics_norm, metrics_phys, forecast_horizon, target_vars)
-
-    # Save metrices into JSON and building loss component history for loss functions with lambda hyperparamters
     
     loss_component_history: dict = {}
     history_csv = os.path.join(run_dir, "history.csv")
@@ -325,16 +294,12 @@ def evaluate(checkpoint_path: str):
     if loss_component_history:
         metrics_payload["loss_component_history"] = loss_component_history
 
-#Save file
     with open(os.path.join(run_dir, "metrics.json"), "w") as f:
         json.dump(metrics_payload, f, indent=2)
     print(f"\nSaved metrics.json → {run_dir}/")
 
-#Save figures
     save_rmse_figure(metrics_phys, forecast_horizon, target_vars, fig_dir)
     save_std_ratio_figure(metrics_norm, forecast_horizon, target_vars, fig_dir)
-
-# Sample panels: prints one figure per target variable per sample. (Converts back to physical unit)
     y_mean = norm_stats["y_mean"]
     y_std  = norm_stats["y_std"]
 
@@ -349,9 +314,7 @@ def evaluate(checkpoint_path: str):
                 pred=pred_phys, target=target_phys,
                 out_steps=forecast_horizon, window_size=window_size,
                 save_dir=fig_dir, eval_var=vname,
-                input_vars=input_vars,
-            )
-
+                input_vars=input_vars, )
     print(f"\n{'='*60}")
     print(f"Done. Results → {run_dir}/")
     print(f"{'='*60}\n")
@@ -363,7 +326,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--checkpoint", type=str, required=True,
-        help="Path to best_model.pt example: sweep_results/fno_combined_physics/best_model.pt",
-    )
+        help="Path to best_model.pt: sweep_results/fno_combined_physics/best_model.pt",)
     args = parser.parse_args()
     evaluate(checkpoint_path=args.checkpoint)

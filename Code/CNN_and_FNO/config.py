@@ -1,17 +1,6 @@
-"""
-config.py — File for dataset, model, train and test script configuration.
-
-
-Level selection:
-
-Variable-level selection is handled via a suffix "X_levY", where X is given variable name, and Y is their level number.
-Possible values are: "q_lev0", "q_lev1", "psi_lev0", "psi_lev1".
-"""
-
-#Data.
-
+#Dataset.py configrations
 DATA_CFG = dict(
-    data_path   = "t30.nc",
+    data_path   = "../t30.nc",
     input_vars  = ["q_lev0", "q_lev1", "psi_lev0", "psi_lev1"],
     target_vars = ["q_lev0", "q_lev1", "psi_lev0", "psi_lev1"],
 
@@ -28,9 +17,7 @@ DATA_CFG = dict(
 
 
 
-#  TRAINING CONFIGS 
-
-
+# train.py configurations
 TRAIN_CFG = dict(
     default_model = "fno",
     default_loss  = "mse",
@@ -45,8 +32,7 @@ TRAIN_CFG = dict(
 )
 
 
-#  Model configuration
-
+# Model configrations, Unet is kept fixed
 MODEL_CFGS = dict( 
     unet=dict(),  #Unet used vanilla hyperparameters, with additonal temporal context and residual prediction changes fixed in the models constructor.
     fno  = dict(
@@ -58,9 +44,7 @@ MODEL_CFGS = dict(
 )
 
 
-# Loss functions 
-# Losses without hyperparameters lambda, have an empty dict.
-
+# loss function configurations. Losses without hyperparameters lambda, have an empty dict.
 LOSS_PARAMS = dict(
     mse                 = dict(),
     weighted_mse        = dict(),
@@ -69,16 +53,14 @@ LOSS_PARAMS = dict(
     combined_physics    = dict(lambda_grad=0.075, lambda_phys=0.05, lambda_std=0.10),
 )
 
-#  Evaluation CONFIGS 
-
+# Evaluation configrations
 EVAL_CFG = dict(
     batch_size = 32, #Number of samples per evaluation batch, same as traning batch.
     n_samples  = 5, #Number of samples used for plotting and evaluaton.
 )
 
 
-#Helper function, assign automatically device for train and test.
-
+#Helper function, assign automatically device for train and test just in case.
 def get_device(cfg: dict = TRAIN_CFG) -> str: 
     if cfg["device"] == "auto":
         import torch

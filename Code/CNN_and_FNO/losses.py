@@ -215,8 +215,7 @@ def combined_physics(
     loss = l_wmse + lambda_grad * l_grad + lambda_phys * l_phys + lambda_std * l_std
     return loss, {
         "wmse": l_wmse.item(), "grad": l_grad.item(),
-        "mean_constraint": l_phys.item(), "std": l_std.item(),
-    }
+        "mean_constraint": l_phys.item(), "std": l_std.item(),}
 
 
 #List of possible loss functions
@@ -224,14 +223,7 @@ LOSS_REGISTRY = {
     "mse":mse, "weighted_mse": weighted_mse,"mse_grad": mse_grad, "mse_mean_constraint": mse_mean_constraint,"combined_physics":combined_physics,
 }
 def get_loss_fn(name: str):
-    """Gives loss function's name from the LOSS_REGISTRY
-    Argument: name str: Name of loss function
-    Possibilities: ['mse', 'weighted_mse', 'mse_grad','mse_mean_constraint' or 'combined_physics'].
-    
-    Returns: corresponding loss function"""
     if name not in LOSS_REGISTRY:
         raise ValueError(
-            f"Unknown loss '{name}'"
-            f"Possible entries: {sorted(LOSS_REGISTRY.keys())}"
-        )
+            f"Possible entries: {sorted(LOSS_REGISTRY.keys())}")
     return LOSS_REGISTRY[name]

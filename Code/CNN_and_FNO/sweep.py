@@ -1,28 +1,8 @@
-""" sweep.py — Automated sweep for traning and test over all model and loss function combinations.
-Calls main train loop from train.py and evaluate from test.py for every
-combination of models and loss functions.
-
-Usage:
-    python sweep.py Run all combinations
-    pythin sweep.py --resume (continue in case of crash)
-    
-Outputs: sweep_results/<model>_<loss>/
-    best_model.pt : best checkpoint  (from train.py)
-    last_model.pt :last-epoch checkpoint  (resume support)
-    history.csv  : epoch-level train/val/lr/time
-    config.json  :full run config + timing + memory + loss_params
-    metrics.json  : normalised and physical scale metrics 
-    -||-/figures/
-      rmse_per_step.png, std_ratio.png,sample_XXX.png"""
-
 import os
 import traceback
 from losses import LOSS_REGISTRY
 from train import train
 from test import evaluate
-
-
-#Configuration for sweep
 
 SWEEP_MODELS = ["unet", "fno"]
 SWEEP_LOSSES = list(LOSS_REGISTRY.keys())

@@ -1,30 +1,3 @@
-"""
-Fourier neural operator 2D for timestep predictions of ocean turbulence. 
-
-
-
-Input (Batch, in_channels, Heught, Width) -> Temporal Positional Encoding -> Lifting MLP   ->  FNO Block:  (SpectralConv2d (Fourier branch)+ Conv1×1+(skip branch) Conv3×3 + (local branch)  GELU. )x Layers ->
-                                                                                                                                                                                            |
-                |                                                                                                                                                                           V
-                V
-Projection MLP  ->  (Batch, out_channels, H, W) + per-target last input frame (residual / delta prediction) -> Output (Batch, out_channels, Height, Width)
-
-
-Channel layout defined in dataset.py, given by VARIABLE-MAJOR
-    channels [variables * window_size : (variables+1) * window_size]  = variable v, oldest -> newest
-
-Model's Interface:
---
-    model = UNet(in_channels, out_channels, 
-                window_size=4,
-                 input_vars=["q_lev0", "q_lev1", psi_lev0, psi_lev1],
-                 target_vars=["q_lev0", "q_lev1", psi_lev0, psi_lev1],
-                 residual=True)
-                 
-    y_hat = model(x)   # x : (B, in_channels,  H, W)
-                       # y : (B, out_channels, H, W)
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +5,6 @@ from typing import List, Optional
 from utils import TemporalPositionalEncoding, _build_residual_base
 
 
-# Spectral Convolution Module: integral operator in Fourier space, keeps spatial resolution, capture long range dependencies and truncates high frequencies.
 
 class SpectralConv2d(nn.Module):
     """2D Fourier integral operator:
@@ -92,7 +64,6 @@ class SpectralConv2d(nn.Module):
 
 
 # Single 2D FNO Module: 
-
 class FNOBlock2d(nn.Module):
     """ single FNO block layer, with three componenets:
     Applies three operations and runs its sum into activation function.
@@ -118,7 +89,6 @@ class FNOBlock2d(nn.Module):
 
 
 # FNO2d Model architecture 
-
 class FNO2d(nn.Module):
     """ 2D Fourier Neural Operator with temporal positional encoding module and residual predictions.
 
@@ -141,7 +111,6 @@ class FNO2d(nn.Module):
     """
 
 
-#Model constructor
     def __init__(
         self,
         in_channels: int,
@@ -176,7 +145,7 @@ class FNO2d(nn.Module):
 
         self.temporal_pe = TemporalPositionalEncoding(in_channels)
 
-# P operator: Lifting: in_channels -> hidden_channels
+# (P) operator: Lifting: in_channels -> hidden_channels
         self.lifting = nn.Sequential(
             nn.Conv2d(in_channels, hidden_channels * 2, kernel_size=1),
             nn.GELU(),
@@ -196,19 +165,8 @@ class FNO2d(nn.Module):
             nn.Conv2d(hidden_channels * 2, out_channels, kernel_size=1),
         )
 
-#Models forward pass
-    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
-        """ Forward pass, whole propagation path
-        
-        Standard FNO architecture( P -> FNOBlock2d -> FNOBlock2d -> FNOBlock2d -> Q)
-        with additional custom Temporal positional encoding and a delta forecast modules.
-        
-        Arguments:
-            x torch.tensor: input tensor with shape (B, in_channels, H, W), channel layout from dataset.py
 
-        Returns:
-            y torch.tensor: predicted output tensor with shape (B, in_channels, H, W)
-        """
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         if self.residual:
             base = _build_residual_base(
                 x, self.window_size, self.input_vars, self.target_vars

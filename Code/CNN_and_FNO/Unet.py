@@ -1,41 +1,9 @@
-"""
-Unet.py — Machine learning CNN based model.
-
-The model uses functions and classes defined in utils.py:
-
-Class
-1. TemporalPositionalEncoding: learable per channel additive bias 
-that is beign applited to the inut before any propagadation.
-Purpose to distinguish oldest frames from the newst from a channel stack.
-
-Function
-2. Residual (delta) prediction: Funtion made to predict the changes between two timesteps
-purpose: help the model to leanr dynamical changes, rather then predicting a full current state next timestep. 
-Can be turned on/off by an argument in the fucntion residual.
-
-Model's Interface:
---
-    model = UNet(in_channels, out_channels, 
-                window_size=4,
-                 input_vars=["q_lev0", "q_lev1", psi_lev0, psi_lev1],
-                 target_vars=["q_lev0", "q_lev1", psi_lev0, psi_lev1],
-                 residual=True)
-                 
-    y_hat = model(x)   # x : (B, in_channels,  H, W)
-                       # y : (B, out_channels, H, W)
-"""
-#Libraries used
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import List, Optional
-
-#  File locally imported
 from utils import TemporalPositionalEncoding, _build_residual_base
-
-# UNet bulding blocks 
-
-# Dobbule Convolution Module: extract features, increase nubmer of channels, keep spatial dimentions.
+ 
 class DoubleConv(nn.Module):
     """ Double Convolution block
     Used to extract features from channels
@@ -61,7 +29,6 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.double_conv(x)
 
-#Encoder Module: Reducing spatial dimention by half, and increasing number of channels by 2.
 class Down(nn.Module):
     """Encoder module block
     Reduces spatial dimention by half with maxpool convolution, increase number of channels by 2.
@@ -81,7 +48,6 @@ class Down(nn.Module):
         return self.maxpool_conv(x)
 
 
-#Decoder module: Increase saptial resolution by 2, reduce number of channels by half + skip connectins with encoder.
 class Up(nn.Module):
     """ Decoder module block
     Decodes: increase spatial resolution by 2 with transposed convolution, while reducing number of channels by half.
@@ -112,7 +78,7 @@ class Up(nn.Module):
                             diffY // 2, diffY - diffY // 2])
         return self.conv(torch.cat([x2, x1], dim=1))
 
-#Final output convolution module: to get the desired number of output channels.
+#final output convolution module: to get the desired number of output channels.
 class OutConv(nn.Module):
     """ Final 1x1 convolution, mapping to the last feature channel to the number given by output channels
     
@@ -128,7 +94,7 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-# Main model architecture
+# main model architecture
 class UNet(nn.Module):
     """U-Net with Temporal Positional Encoding, Delta Forecasting modules.
     Follow standard unet architecture with additional Temporal Positional Encoding, Delta Forecasting modules.:
@@ -149,7 +115,6 @@ class UNet(nn.Module):
             input_vars  list : ordered list of input variable names, ["q_lev0","q_lev1", "psi_lev0", "psi_lev1"]
             target_vars list : ordered list of target variable name, ["q_lev0","q_lev1", "psi_lev0", "psi_lev1"]"""
 
-#Model constructor
     def __init__(
         self,
         in_channels: int,
@@ -182,17 +147,8 @@ class UNet(nn.Module):
 
         self.outc = OutConv(64, out_channels)
 
-#Models forward pass
+#models forward pass
     def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
-        """Forward pass through the propagation path.
-        Standard UNET architecture with additional custom Temporal positional encoding and a delta forecast modules.
-        
-        Arguments:
-            x: torch.tensor: input tensor with shape (B, in_channels, H, W), channel layout from dataset.py
-
-        Returns:
-            y: torch.tensor: predicted output tensor with shape (B, in_channels, H, W)
-        """
         if self.residual:
             base = _build_residual_base(
                 x, self.window_size, self.input_vars, self.target_vars

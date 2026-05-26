@@ -1,22 +1,10 @@
-"""
-utils.py — Shared utilities for train, test and models.
-
-Contains:
-  * temporalpositionalencoding  
-  * _build_residual_base        
-  * slide_window                
-  * create_model                 
-"""
-
 import torch
 import torch.nn as nn
 from typing import List
-
 from config import MODEL_CFGS
 
 
-#Temporal Positional Encoding Module
-
+#temporal positional encoding module
 class TemporalPositionalEncoding(nn.Module):
     """
     Learnable scalar bias, used channel wise to encode temporal position orders. Make the model distinguish temporal position for each frame.
@@ -43,9 +31,7 @@ class TemporalPositionalEncoding(nn.Module):
         return x + self.bias
 
 
-#Residual (delta) predictor Module
-
-
+#residual (delta) predictor Module
 def _build_residual_base(
     x: torch.Tensor,
     window_size: int,
@@ -80,9 +66,7 @@ def _build_residual_base(
 
 
 
-#Window slide function.
-
-
+ #window  slides function.
 def slide_window(x_cur: torch.Tensor, new_pred: torch.Tensor,
                  window_size: int,
                  input_vars: List[str], target_vars: List[str]) -> torch.Tensor:
@@ -124,10 +108,7 @@ def slide_window(x_cur: torch.Tensor, new_pred: torch.Tensor,
 
 
 
-#Model factory function.
-
-#Build mode based on hyperparamter and model name.
-
+#build mode based on hyperparamter and model name.
 def create_model(model_name: str, in_ch: int, out_ch: int,
                  window_size: int,
                  input_vars: List[str], target_vars: List[str]):
@@ -159,9 +140,7 @@ def create_model(model_name: str, in_ch: int, out_ch: int,
             window_size=window_size,
             input_vars=input_vars,
             target_vars=target_vars,
-            residual=True,
-        )
-
+            residual=True,)
 
     elif model_name == "fno":
         cfg = MODEL_CFGS.get("fno", {})
@@ -175,11 +154,8 @@ def create_model(model_name: str, in_ch: int, out_ch: int,
             n_modes_y=cfg.get("n_modes_y", 16),
             residual=True,
             input_vars=input_vars,
-            target_vars=target_vars,
-        )
-
+            target_vars=target_vars,)
     else:
         raise ValueError(f"Unknown model: '{model_name}'. Valid choices: unet, fno")
-
 
 
