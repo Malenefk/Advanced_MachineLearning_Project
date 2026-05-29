@@ -52,4 +52,4 @@ This report highlights the strengths and weaknesses of different model architect
 
 - **Results from training**
   Results from the final training is uploaded to OneDrive, and can be accessed by following this link:
-  https://uio-my.sharepoint.com/:f:/r/personal/malenefk_uio_no/Documents/FYS5429%20-%20successful%20last%20training%20files?csf=1&web=1&e=MxaoBE
+  [https://uio-my.sharepoint.com/:f:/r/personal/malenefk_uio_no/Documents/FYS5429%20-%20successful%20last%20training%20files?csf=1&web=1&e=MxaoBE](https://uio-my.sharepoint.com/:f:/g/personal/malenefk_uio_no/IgDeAWf1TivtQKKCdvYKYcf7AWWUd8DfASd_HCx_iDAfRBI?e=aLNpyk)
