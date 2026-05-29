@@ -21,10 +21,7 @@ def _to_jsonable(obj):
      obj: numpy array 
 
      Return:
-        same structre, but with pure python types.
-    
-    
-    """
+        same structre, but with pure python types."""
     if isinstance(obj, dict):
         return {k: _to_jsonable(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -36,25 +33,6 @@ def _to_jsonable(obj):
     if isinstance(obj, (np.integer, np.floating)):
         return obj.item()
     return obj
-
-#get data
-def _target_frame_from_y(y, step, forecast_horizon, n_target_vars):
-    """Extract one target frame from y
-
-        Arguments:
-            y torch.tensor: target tensor, with shape (B, n_target_vars * forecast_horizon, H, W)
-            step int: forecast step index
-            forecast_horizon int: number of timesteps to be predicted
-            n_target_vars int: number of target variables
-    
-     Returns:
-        torch.tensor: ground truth frame for the given step, with shape (B, n_target_vars, H, W)"""
-    return torch.cat(
-        [
-            y[:, v * forecast_horizon + step : v * forecast_horizon + step + 1]
-            for v in range(n_target_vars)],
-        dim=1,)
-
 
 # update input window for next forcast, and forward slidning 
 def _slide_window(x_cur, pred, window_size, input_vars, target_vars):
@@ -79,7 +57,6 @@ def _slide_window(x_cur, pred, window_size, input_vars, target_vars):
     for iv, name in enumerate(input_vars):
         start = iv * window_size
         block = x_cur[:, start : start + window_size]
-
         if name in target_index:
             pred_ch = target_index[name]
             new_frame = pred[:, pred_ch : pred_ch + 1]
@@ -128,10 +105,9 @@ def moving_average_rollout(test_loader, window_size, forecast_horizon, input_var
             for target_name in target_vars:
                 if target_name not in input_vars:
                     raise ValueError(
-                        f"Target variable {target_name!r} isnot in input_vars"
-                        "This moving average baseline requires target variables"
-                        "to also be available as input variables."
-                    )
+                        f"Target variable {target_name!r} isnot a input variable"
+                        "This moving average baseline needs target variables"  )
+                
                 iv = input_vars.index(target_name)
                 start = iv * window_size
                 block = x_cur[:, start : start + window_size]
@@ -139,7 +115,9 @@ def moving_average_rollout(test_loader, window_size, forecast_horizon, input_var
                 pred_vars.append(pred_var)
 
             pred = torch.cat(pred_vars, dim=1)
-            target = _target_frame_from_y(y, step, forecast_horizon, n_target_vars)
+            target = torch.cat(
+                [y[:, v * forecast_horizon + step : v * forecast_horizon + step + 1]
+                 for v in range(n_target_vars)], dim=1)
             
             step_preds.append(pred.numpy())
             step_targets.append(target.numpy())
@@ -195,11 +173,9 @@ def main():
     )
     parser.add_argument("--out_dir", type=str, default="baseline_results/moving_average")
     args = parser.parse_args()
-
     forecast_horizon = DATA_CFG["forecast_horizon"]
     batch_size = EVAL_CFG.get("batch_size", 16)
     ma_window = WINDOW_SIZE
-
     os.makedirs(args.out_dir, exist_ok=True)
 
     _, _, test_loader, _, _, norm_stats = get_dataloaders(
@@ -230,15 +206,13 @@ def main():
 #Save into JSON
     with open(metrics_path, "w") as f:
         json.dump(
-            {
-                "baseline": "moving_average",
+            {   "baseline": "moving_average",
                 "ma_window": ma_window,
                 "forecast_horizon": forecast_horizon,
                 "input_vars": list(INPUT_VARS),
                 "target_vars": list(TARGET_VARS),
                 "norm": _to_jsonable(metrics_norm),
-                "phys": _to_jsonable(metrics_phys),
-            },
+                "phys": _to_jsonable(metrics_phys),},
             f,
             indent=2,)
 #result into .npz
@@ -251,11 +225,11 @@ def main():
         input_vars=np.array(list(INPUT_VARS)),
         target_vars=np.array(list(TARGET_VARS)),)
 
-    print(f"Saved metrics      -> {metrics_path}")
-    print(f"Saved predictions  -> {predictions_path}")
-    print(f"Prediction shape   -> {preds_norm.shape}")
-    print(f"Overall RMSE norm  -> {metrics_norm['overall']['rmse']:.6f}")
-    print(f"Overall RMSE phys  -> {metrics_phys['overall']['rmse']:.6e}")
+    print(f"Saved metric-> {metrics_path}")
+    print(f"Saved predictions-> {predictions_path}")
+    print(f"Prediction shapes-> {preds_norm.shape}")
+    print(f"Overall RMSE norm-> {metrics_norm['overall']['rmse']}")
+    print(f"Overall RMSE phys-> {metrics_phys['overall']['rmse']}")
 
 if __name__ == "__main__":
     main()

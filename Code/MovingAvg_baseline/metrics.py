@@ -110,8 +110,7 @@ def _rollout_all_vars(model, test_loader, device, window_size,
         targs_np = np.stack(
             [y[:, v * forecast_horizon : (v + 1) * forecast_horizon].cpu().numpy()
              for v in range(n_tv)],
-            axis=1,
-        )  
+            axis=1,)  
 
         all_preds.append(preds_np)
         all_targets.append(targs_np)
@@ -119,7 +118,6 @@ def _rollout_all_vars(model, test_loader, device, window_size,
     preds   = np.concatenate(all_preds,   axis=0) 
     targets = np.concatenate(all_targets, axis=0)
     return preds, targets
-
 
 
 #metrics computaion functions
@@ -175,22 +173,17 @@ def _compute_all_metrics(preds_norm: np.ndarray,
     accum_rmse = float(np.sqrt(np.mean(per_step_mse)))
 
 
-# per step metrices for all variables
- 
+# per step RMSE
     per_step = {}
     for s in range(T):
-        per_step[f"t+{s+1}"] = {
-            "rmse": _rmse(preds[:, :, s], targets[:, :, s]),
-            "mae":  _mae (preds[:, :, s], targets[:, :, s]),
-        }
-
+        per_step[f"t+{s+1}"] = {"rmse": _rmse(preds[:, :, s], targets[:, :, s])}
 
     # per step and per variable metrices    
     per_var = {}
     amplitude_collapse = {}
     
     for v, vname in enumerate(TARGET_VARS):
-        p_v = preds  [:, v]    # (N, T, H, W)
+        p_v = preds  [:, v]    # (N, T, H, W) form
         t_v = targets[:, v]
 
         var_rmse  = _rmse(p_v, t_v)
