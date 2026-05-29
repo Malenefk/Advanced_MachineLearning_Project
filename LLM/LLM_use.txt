@@ -8,8 +8,8 @@ For this project, Artificial Intelligence (AI) has been used for the following p
 File / notebook           | LLM level | Description
 --------------------------|-----------|----------------------------------------------
 CNN and FNO section       | 2 / 3     | LLM provided the help with structure between files, and bulding certain classes or function as schedueld sampling or delta forecasting. Code has verified logic and                                                                           |           | adapted . The sweep.py has been developed with extensive help of Claude.ai.                               
-                          |           | simple and plug-and-play interface for the end user. The model architectures follow their original
-                          |           | tested and adapted for our NTK experiment
+                          |           |  
+                          |           | 
 
 GCN section               | 2         | An LLM is used to provide structure in the file system. The codebase is written independently, but                               
                           |           | Claude is used to merge files and sweep them together for a seamless training setup. LLM is used to 
