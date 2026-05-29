@@ -1,22 +1,9 @@
-"""losses.py — Loss functions.
-
-Possible loss functions:
-    1. mse                  Mean Squared Error (mse) (used as default)
-    2. weighted_mse         MSE with per channel weigthing (inverse variance scaling)
-    3. mse_grad             MSE with spatial gradient penalt
-    4. mse_mean_constraint  MSE with spatial mean conservation penalty
-    5. combined_physics     MSE with weigthing (inverse variance scaling), gradient, mean constraint and standard deviation penalty
-
-Lambda hyperparameter losses 3-5 are defioned in config.py 
-Their components values are logged in histoty.csv + inside metric.json"""
-
 import torch
 import torch.nn.functional as F
 from typing import Dict, Optional, Tuple
 
 
 #Bulding blocks and components
-
 def _spatial_gradient_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """Compute spatial gradients of predictions and targets.
     approximate gradients in both directions height and width. Penalize directions from predictions with different spatial structures
@@ -75,13 +62,13 @@ def _channel_weights(target: torch.Tensor, C: int) -> torch.Tensor:
     Return:
         torch.Tensor: tensor with normalized channels weights of shape (C,) variance scaled to preserve mean weight magntiude.
        """
-    var = target.flatten(2).var(dim=-1).mean(dim=0).clamp(min=1e-8)  # (C,)
-    w   = 1.0 / var # inverse variance weighting
+    var = target.flatten(2).var(dim=-1).mean(dim=0).clamp(min=1e-8) 
+     # inverse variance weighting 
+    w   = 1.0 / var 
     return (w / w.sum() * C).to(target.device)
 
 
 #Loss functions
-
 def mse(
     pred: torch.Tensor,
     target: torch.Tensor,
@@ -220,10 +207,4 @@ def combined_physics(
 
 #List of possible loss functions
 LOSS_REGISTRY = {
-    "mse":mse, "weighted_mse": weighted_mse,"mse_grad": mse_grad, "mse_mean_constraint": mse_mean_constraint,"combined_physics":combined_physics,
-}
-def get_loss_fn(name: str):
-    if name not in LOSS_REGISTRY:
-        raise ValueError(
-            f"Possible entries: {sorted(LOSS_REGISTRY.keys())}")
-    return LOSS_REGISTRY[name]
+    "mse":mse, "weighted_mse": weighted_mse,"mse_grad": mse_grad, "mse_mean_constraint": mse_mean_constraint,"combined_physics":combined_physics,}

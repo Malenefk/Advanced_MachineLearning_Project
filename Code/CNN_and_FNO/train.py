@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from config import TRAIN_CFG, DATA_CFG, MODEL_CFGS, LOSS_PARAMS, get_device
+from config import TRAIN_CFG, DATA_CFG, MODEL_CFGS, LOSS_PARAMS
 from dataset import get_dataloaders, DATA_PATH, INPUT_VARS, TARGET_VARS, WINDOW_SIZE
 from losses import LOSS_REGISTRY
 from utils import slide_window, create_model
@@ -16,13 +16,13 @@ LR               = TRAIN_CFG["lr"]
 MAX_EPOCHS       = TRAIN_CFG["max_epochs"]
 PATIENCE         = TRAIN_CFG["patience"]
 GRAD_CLIP        = TRAIN_CFG.get("grad_clip", 1.0)
-DEVICE           = get_device(TRAIN_CFG)
+DEVICE           = "cuda" if torch.cuda.is_available() else "cpu"
 DEFAULT_MODEL    = TRAIN_CFG["default_model"]
 DEFAULT_LOSS     = TRAIN_CFG["default_loss"]
-
 FORECAST_HORIZON = DATA_CFG["forecast_horizon"]
 SS_RATIO         = DATA_CFG["ss_ratio"]
 SS_WARMUP_EPOCHS = DATA_CFG.get("ss_warmup_epochs", 0)
+
 
 
 def get_current_ss_ratio(epoch: int) -> float:
@@ -79,24 +79,22 @@ def train_one_epoch(model, loader, optimizer, device, loss_fn, loss_params,
 
             gt_frame = torch.cat(
                 [y[:, v * forecast_horizon + step : v * forecast_horizon + step + 1]
-                 for v in range(n_target_vars)], dim=1
-            ) 
+                 for v in range(n_target_vars)], dim=1) 
 
             step_weight   = 1.0 + step / max(1, forecast_horizon - 1)
-            scalar, comps = loss_fn(pred, gt_frame, **loss_params)
+            scalar, comps = loss_fn(pred, gt_frame, **loss_params) #get returned values from loss
             step_loss     = step_loss + step_weight * scalar
-
             
             for k, v in comps.items():
                 batch_comps[k] = batch_comps.get(k, 0.0) + step_weight * v
 
 
             # random use of scheduled sampling, based on its percerntages in current get_current_ss_ratio. 
-            use_pred   = torch.rand(1).item() < ss_ratio
+            use_pred   = torch.rand(1).item() < ss_ratio #Use own predictions or GT
             next_frame = pred.detach() if use_pred else gt_frame
-            x_cur      = slide_window(x_cur, next_frame, window_size, INPUT_VARS, TARGET_VARS)
+            x_cur      = slide_window(x_cur, next_frame, window_size, INPUT_VARS, TARGET_VARS) #free run validation
 
-        weight_sum = sum(1.0 + s / max(1, forecast_horizon - 1) for s in range(forecast_horizon))
+        weight_sum = sum(1.0 + s / max(1, forecast_horizon - 1) for s in range(forecast_horizon)) #normalize weigtehd timestep 
         loss       = step_loss / weight_sum
 
         #averaged components losses for the epoch.
@@ -107,7 +105,7 @@ def train_one_epoch(model, loader, optimizer, device, loss_fn, loss_params,
 
         loss.backward()
         if GRAD_CLIP > 0:
-            nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+            nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP) #limit gradient clipping
         optimizer.step()
         total_loss += loss.item() * x.size(0)
 
@@ -148,12 +146,12 @@ def validate(model, loader, device, loss_fn, loss_params, window_size, forecast_
             pred     = model(x_cur)
             gt_frame = torch.cat(
                 [y[:, v * forecast_horizon + step : v * forecast_horizon + step + 1]
-                 for v in range(n_target_vars)], dim=1
-            )
-            step_weight = 1.0 + step / max(1, forecast_horizon - 1)
+                 for v in range(n_target_vars)], dim=1)
+            
+            step_weight = 1.0 + step / max(1, forecast_horizon - 1) #assign greater penalty on later preds
             scalar, _   = loss_fn(pred, gt_frame, **loss_params)
             step_loss  += step_weight * scalar
-            x_cur       = slide_window(x_cur, pred, window_size, INPUT_VARS, TARGET_VARS)
+            x_cur       = slide_window(x_cur, pred, window_size, INPUT_VARS, TARGET_VARS) 
 
         weight_sum  = sum(1.0 + s / max(1, forecast_horizon - 1) for s in range(forecast_horizon))
         total_loss += (step_loss / weight_sum).item() * x.size(0)
@@ -194,8 +192,8 @@ def train(model_name: str = None, loss_name: str = None,
             f"Given loss function dont exist '{loss_name}' "
             f"Available loss functions: {sorted(LOSS_REGISTRY.keys())}"
         )
-    loss_fn     = LOSS_REGISTRY[loss_name]
-    loss_params = LOSS_PARAMS.get(loss_name, {})
+    loss_fn = LOSS_REGISTRY[loss_name] 
+    loss_params = LOSS_PARAMS.get(loss_name, {}) 
 
     if run_dir is None:
         run_dir = os.path.join("sweep_results", f"{model_name}_{loss_name}")
@@ -203,9 +201,7 @@ def train(model_name: str = None, loss_name: str = None,
 
     train_loader, val_loader, _, in_ch, _, norm_stats = get_dataloaders(
         data_path=DATA_PATH, input_vars=INPUT_VARS, target_vars=TARGET_VARS,
-        window=WINDOW_SIZE, out_steps=FORECAST_HORIZON, batch_size=BATCH_SIZE,
-    )
-
+        window=WINDOW_SIZE, out_steps=FORECAST_HORIZON, batch_size=BATCH_SIZE)
     model_out_ch = len(TARGET_VARS)
 
     model = create_model(
@@ -216,21 +212,17 @@ def train(model_name: str = None, loss_name: str = None,
     ).to(DEVICE)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-    print(f"\n{'='*60}")
-    print(f"Training {model_name.upper()}  in iterative mode")
-    print(f"  device          : {DEVICE}")
-    print(f"  loss            : {loss_name}")
+    print(f" Training {model_name.upper()} with {loss_name} loss in iterative mode")
     print(f"  in_channels     : {in_ch}   model out_channels: {model_out_ch}")
-    print(f"  window_size     : {WINDOW_SIZE}")
     print(f"  forecast_horizon: {FORECAST_HORIZON}")
     print(f"  ss_ratio target : {SS_RATIO} , warmed up over {SS_WARMUP_EPOCHS} epochs")
     print(f"  grad_clip       : {GRAD_CLIP}")
     print(f"  parameters      : {n_params:,}")
     print(f"  run_dir         : {run_dir}")
-    print(f"{'='*60}\n")
+
 
     optimizer = Adam(model.parameters(), lr=LR)
-    scheduler = ReduceLROnPlateau(optimizer, patience=5, factor=0.5)
+    scheduler = ReduceLROnPlateau(optimizer, patience=5, factor=0.5) #lower lr by half, after 5 no better epochs
 
     # reset GPU memory stats, runs only on cuda GPU devices
     if DEVICE == "cuda":
@@ -360,20 +352,18 @@ def train(model_name: str = None, loss_name: str = None,
         n_params=n_params,
         best_val_loss=float(best_val),
         train_seconds=train_seconds,
-        peak_mem_mb=peak_mem_mb,
-    )
+        peak_mem_mb=peak_mem_mb)
+    
     if model_name in MODEL_CFGS and MODEL_CFGS[model_name]:
         cfg_out.update(MODEL_CFGS[model_name])
     with open(os.path.join(run_dir, "config.json"), "w") as f:
         json.dump(cfg_out, f, indent=4)
 
-    print(f"\n{'='*60}")
-    print(f"Training complete  —  {model_name.upper()} / {loss_name}")
+    print(f" Training complete  {model_name.upper()} / {loss_name}")
     print(f"  best_val    = {best_val:.6f}")
     print(f"  train time  = {train_seconds/60:.1f} min")
     print(f"  peak memory = {peak_mem_mb:.0f} MB")
     print(f"  run_dir     = {run_dir}/")
-    print(f"{'='*60}\n")
     return model, history, train_seconds, peak_mem_mb, best_val
 
 # CLI commands

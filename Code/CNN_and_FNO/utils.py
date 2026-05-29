@@ -56,12 +56,11 @@ def _build_residual_base(
     for var in target_vars:
         if var not in input_vars:
             raise ValueError(
-                f"Target variable '{var}' is not in  input_vars={input_vars}"
-            )
+                f"Target variable '{var}' is not in  input_vars={input_vars}")
         
         iv  = input_vars.index(var)
         ch  = iv * window_size + (window_size - 1)   
-        frames.append(x[:, ch : ch + 1])             
+        frames.append(x[:, ch : ch + 1])   #get last time step from input current window   
     return torch.cat(frames, dim=1)                  
 
 
@@ -90,19 +89,18 @@ def slide_window(x_cur: torch.Tensor, new_pred: torch.Tensor,
     Return:
         troch.Tensor: Updated and shifted forward tensor by one step, with shape: (B, n_input_vars * window_size, H, W).
     """
-    target_ch = {v: i for i, v in enumerate(target_vars)}
+    target_ch = {v: i for i, v in enumerate(target_vars)} #create an dictionary
     parts = []
 
     for iv, var in enumerate(input_vars):
         s   = iv * window_size
         blk = x_cur[:, s : s + window_size]           
         if var in target_ch:
-            ti        = target_ch[var]
-            new_frame = new_pred[:, ti:ti+1]           # (B, 1, H, W)
-            parts.append(torch.cat([blk[:, 1:], new_frame], dim=1))
+            ti = target_ch[var]
+            new_frame = new_pred[:, ti:ti+1]   # (B, 1, H, W)
+            parts.append(torch.cat([blk[:, 1:], new_frame], dim=1)) #update input window, remove old
         else:
-            # Variable not predicted — repeat last known frame (persistence)
-            parts.append(torch.cat([blk[:, 1:], blk[:, -1:]], dim=1))
+            parts.append(torch.cat([blk[:, 1:], blk[:, -1:]], dim=1)) # repeat last frame
 
     return torch.cat(parts, dim=1)
 

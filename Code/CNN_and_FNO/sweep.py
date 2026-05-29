@@ -24,18 +24,15 @@ def main():
     history.csv: train and validation loss, loss function componenets, lr, time per epoch
     config.json: configuration, hyperparamters, total time and memory usage of GPU/CPU
     metrics.json: evluation metrices both normalised and physical unit.
-    figures/ qualitative predicted fields predicted timesteps, RMSE and std_ratio
+    figures/ qualitative predicted fields predicted timesteps, RMSE and std_ratio"""
 
-    
-    """
     combos = [(model_name, loss_name) for model_name in SWEEP_MODELS for loss_name in SWEEP_LOSSES] #Define all combinations
     failed = [] #store filed entries
  
-    print(f"\n{'=' * 70}")
-    print(f"  SWEEP PLAN — {len(combos)} combinations")
+    print(f"\nSWEEP PLAN  {len(combos)} combinations")
     for i, (model_name, loss_name) in enumerate(combos, 1):
         print(f"  {i:>2}. {model_name:<6} x {loss_name}")
-    print(f"{'=' * 70}\n")
+    print()
 
     os.makedirs(SWEEP_ROOT, exist_ok=True)
 
@@ -44,17 +41,14 @@ def main():
         tag = f"{model_name}_{loss_name}"
         run_dir = os.path.join(SWEEP_ROOT, tag) #Save
 
-        print(f"\n{'=' * 70}")
-        print(f"  START {tag}")
-        print(f"{'=' * 70}")
+        print(f"\nSTART {tag}")
 
         try:
             train(
                 model_name=model_name,
                 loss_name=loss_name,
                 run_dir=run_dir,
-                resume=False,
-            )
+                resume=False)
 
             ckpt_path = os.path.join(run_dir, "best_model.pt")
             evaluate(checkpoint_path=ckpt_path)
@@ -66,11 +60,10 @@ def main():
             failed.append((model_name, loss_name))
             continue
 
-    print(f"\n{'=' * 70}")
-    print(f"  SWEEP COMPLETE: {len(combos) - len(failed)} / {len(combos)} runs succeeded")
+    print(f"\nSWEEP COMPLETE: {len(combos) - len(failed)} / {len(combos)} runs succeeded")
     if failed:
         print(f"  FAILED: {failed}")
-    print(f"{'=' * 70}\n")
+    print()
 
 if __name__ == "__main__":
     main()

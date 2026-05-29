@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from config import TRAIN_CFG, EVAL_CFG, LOSS_PARAMS, get_device
+from config import TRAIN_CFG, EVAL_CFG, LOSS_PARAMS
 from dataset import get_dataloaders, DATA_PATH
 from metrics import _rollout_all_vars, _compute_all_metrics, _denorm_var
 from utils import create_model
 BATCH_SIZE    = EVAL_CFG["batch_size"]
 N_SAMPLES     = EVAL_CFG["n_samples"]
-DEVICE        = get_device(TRAIN_CFG)
+DEVICE        = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def save_sample_figure(sample_idx: int, x_input: np.ndarray,
@@ -56,9 +56,7 @@ def save_sample_figure(sample_idx: int, x_input: np.ndarray,
         y    = target[t]
         vmin = min(float(p.min()), float(y.min()))
         vmax = max(float(p.max()), float(y.max()))
-
-        axes[0, t].imshow(last_frame, cmap="RdBu_r",
-                          vmin=float(last_frame.min()), vmax=float(last_frame.max()))
+        axes[0, t].imshow(last_frame, cmap="RdBu_r", vmin=float(last_frame.min()), vmax=float(last_frame.max()))
         axes[0, t].set_title("Input (t=0)")
         axes[0, t].axis("off")
         axes[1, t].imshow(p, cmap="RdBu_r", vmin=vmin, vmax=vmax)
@@ -101,8 +99,8 @@ def save_rmse_figure(metrics_phys: dict,
 
         ax.plot(steps, model_rmse, marker="o", lw=2, label="model")
         ax.set_xlabel("Forecast step")
-        ax.set_ylabel("RMSE (physical units)")
-        ax.set_title(f"Per-step RMSE — {vname}")
+        ax.set_ylabel("RMSE in physical unit")
+        ax.set_title(f"Per step RMSE — {vname}")
         ax.set_xticks(steps)
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
@@ -129,16 +127,13 @@ def save_std_ratio_figure(metrics_norm: dict,
         saves figure to save_dir/std_ratio.png."""
     
     steps = list(range(1, forecast_horizon + 1))
-    fig, axes = plt.subplots(1, len(target_vars),
-                             figsize=(4.5 * len(target_vars), 3.5),
-                             sharey=True)
+    fig, axes = plt.subplots(1, len(target_vars), figsize=(4.5 * len(target_vars), 3.5), sharey=True)
     if len(target_vars) == 1:
         axes = [axes]
 
     for ax, vname in zip(axes, target_vars):
         model_ratio = metrics_norm["amplitude_collapse"][vname]["per_step_std_ratio"]
-
-
+        
         ax.plot(steps, model_ratio, marker="o", lw=2, label="model")
         ax.axhline(1.0, color="k",       lw=1.2, ls="--", label="ideal (1.0)")
         ax.axhline(0.5, color="tab:red", lw=0.8, ls=":",  label="collapse (0.5)")
@@ -157,42 +152,6 @@ def save_std_ratio_figure(metrics_norm: dict,
     print(f"  Saved {path}")
 
 
-def _print_summary(metrics_norm: dict, metrics_phys: dict,
-                   forecast_horizon: int, target_vars: list):
-    """Print a metric simple table
-    
-    prints overall metrics in both z-score normalised and physical units per-step, RMSE, and per-variable RMSE with mean std ratio
-
-    Argumetns:
-        metrics_phys dict: physical scale metrics dict from _compute_all_metrics function
-        metrics_norm dict: z-score normalised metrics dict from _compute_all_metrics function
-        forecast_horizon int: number of forecast steps shown on the
-        target_vars list: (ordered) name list of target variable 
-        
-    Returns:
-        Print out in console"""
-    print("\n" + "─" * 65)
-    print(f"  {'Metric':<12}  {'Norm (model)':>14}  {'Phys (model)':>14}")
-    print("─" * 65)
-    for k in metrics_norm["overall"]:
-        print(f"  {k:<12}  {metrics_norm['overall'][k]:>14.6f}"
-              f"  {metrics_phys['overall'][k]:>14.6e}")
-    print("─" * 65)
-
-    print("\nPer step RMSE  (normalised  |  physical)")
-    for s in range(forecast_horizon):
-        key = f"t+{s+1}"
-        nm  = metrics_norm["per_step"][key]["rmse"]
-        pm  = metrics_phys["per_step"][key]["rmse"]
-        print(f"  {key}  model={nm:.4f}/{pm:.4e}")
-
-    print("\nPer variable RMSE (physical):")
-    for vname in target_vars:
-        mv = metrics_phys["per_var"][vname]["rmse"]
-        sr = metrics_norm["amplitude_collapse"][vname]["mean_std_ratio"]
-        print(f"  {vname:<14}  model={mv:.4e}  mean_std_ratio={sr:.3f}")
-
-
 # main evaluation 
 def evaluate(checkpoint_path: str):
     """Evaluate and save metrices for saved model.
@@ -208,8 +167,7 @@ def evaluate(checkpoint_path: str):
     
     if not os.path.isfile(checkpoint_path):
         raise FileNotFoundError(
-            f"No checkpoint at '{checkpoint_path}'"
-        )
+            f"No checkpoint at '{checkpoint_path}'")
 
     run_dir = os.path.dirname(checkpoint_path)
     fig_dir = os.path.join(run_dir, "figures")
@@ -236,15 +194,12 @@ def evaluate(checkpoint_path: str):
     model.load_state_dict(ckpt["model_state"])
     model.eval()
 
-    print(f"\n{'='*60}")
-    print(f"Evaluating  {model_name.upper()} / {loss_name}  iterative mode")
+    print(f" Evaluating {model_name.upper()} / {loss_name}  iterative mode")
     print(f"  checkpoint epoch : {ckpt['epoch']}   val_loss: {ckpt['val_loss']:.6f}")
-    print(f"  window_size      : {window_size}")
     print(f"  forecast_horizon : {forecast_horizon}")
     print(f"  input_vars       : {input_vars}")
     print(f"  target_vars      : {target_vars}")
     print(f"  run_dir          : {run_dir}")
-    print(f"{'='*60}\n")
 
     _, _, test_loader, _, _, _ = get_dataloaders(
         data_path=DATA_PATH,
@@ -252,30 +207,39 @@ def evaluate(checkpoint_path: str):
         target_vars=target_vars,
         window=window_size,
         out_steps=forecast_horizon,
-        batch_size=BATCH_SIZE,
-    )
-    print(f"Test samples length: {len(test_loader.dataset)}\n")
-
-
-
+        batch_size=BATCH_SIZE)
+    
+    print(f"Test samples: {len(test_loader.dataset)}\n")
 
 #rollout predictions for all test samples
     preds_norm, targets_norm = _rollout_all_vars(
-        model, test_loader, DEVICE, window_size, forecast_horizon,
-    ) 
+        model, test_loader, DEVICE, window_size, forecast_horizon) 
 
 #collect all input batches from test loader
-    
+
     all_inputs = []
     for x, _ in test_loader:
         all_inputs.append(x.numpy())
     inputs_np = np.concatenate(all_inputs, axis=0)   
 
     # Compute all metrics
-
     metrics_norm = _compute_all_metrics(preds_norm, targets_norm, norm_stats, space="norm")
     metrics_phys = _compute_all_metrics(preds_norm, targets_norm, norm_stats, space="phys")
-    _print_summary(metrics_norm, metrics_phys, forecast_horizon, target_vars)
+
+    print("\nOverall metrics (norm / phys)")
+    for k in metrics_norm["overall"]:
+        print(f"  {k}: {metrics_norm['overall'][k]:.6f} / {metrics_phys['overall'][k]:.6e}")
+    print("\nPer step RMSE (norm / phys)")
+    for s in range(forecast_horizon):
+        key = f"t+{s+1}"
+        nm  = metrics_norm["per_step"][key]["rmse"]
+        pm  = metrics_phys["per_step"][key]["rmse"]
+        print(f"  {key}  norm={nm:.4f}  phys={pm:.4e}")
+    print("\nPer variable RMSE (phys) and mean std ratio")
+    for vname in target_vars:
+        mv = metrics_phys["per_var"][vname]["rmse"]
+        sr = metrics_norm["amplitude_collapse"][vname]["mean_std_ratio"]
+        print(f"  {vname}: rmse={mv:.4e}  mean_std_ratio={sr:.3f}")
     
     loss_component_history: dict = {}
     history_csv = os.path.join(run_dir, "history.csv")
@@ -296,7 +260,7 @@ def evaluate(checkpoint_path: str):
 
     with open(os.path.join(run_dir, "metrics.json"), "w") as f:
         json.dump(metrics_payload, f, indent=2)
-    print(f"\nSaved metrics.json → {run_dir}/")
+    print(f"Saved metrics.json → {run_dir}/")
 
     save_rmse_figure(metrics_phys, forecast_horizon, target_vars, fig_dir)
     save_std_ratio_figure(metrics_norm, forecast_horizon, target_vars, fig_dir)
@@ -315,15 +279,11 @@ def evaluate(checkpoint_path: str):
                 out_steps=forecast_horizon, window_size=window_size,
                 save_dir=fig_dir, eval_var=vname,
                 input_vars=input_vars, )
-    print(f"\n{'='*60}")
-    print(f"Done. Results → {run_dir}/")
-    print(f"{'='*60}\n")
-
+    print(f"Done. results saved to {run_dir}/")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Evaluate a trained checkpoint on the test set"
-    )
+        description="Evaluate a trained checkpoint on the test set")
     parser.add_argument(
         "--checkpoint", type=str, required=True,
         help="Path to best_model.pt: sweep_results/fno_combined_physics/best_model.pt",)

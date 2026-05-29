@@ -55,6 +55,7 @@ class SpectralConv2d(nn.Module):
         out_ft = torch.zeros(B, self.out_channels, H, W // 2 + 1,
                              dtype=torch.cfloat, device=x.device)
 
+#Einstein summation for complex multiplication with fourier modes
         out_ft[:, :, :self.n_modes_x,  :self.n_modes_y] = torch.einsum(
             "bixy,ioxy->boxy", x_ft[:, :, :self.n_modes_x, :self.n_modes_y], self.weights1)
         out_ft[:, :, -self.n_modes_x:, :self.n_modes_y] = torch.einsum(

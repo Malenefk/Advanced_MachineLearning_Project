@@ -1,4 +1,3 @@
-#Dataset.py configrations
 DATA_CFG = dict(
     data_path   = "../t30.nc",
     input_vars  = ["q_lev0", "q_lev1", "psi_lev0", "psi_lev1"],
@@ -15,8 +14,6 @@ DATA_CFG = dict(
     val_end   = 255,
 )
 
-
-
 # train.py configurations
 TRAIN_CFG = dict(
     default_model = "fno",
@@ -31,7 +28,6 @@ TRAIN_CFG = dict(
     results_dir   = "results",
 )
 
-
 # Model configrations, Unet is kept fixed
 MODEL_CFGS = dict( 
     unet=dict(),  #Unet used vanilla hyperparameters, with additonal temporal context and residual prediction changes fixed in the models constructor.
@@ -40,8 +36,7 @@ MODEL_CFGS = dict(
         n_layers        = 4,
         n_modes_x       = 32,  # 64×64 grid supports up to 32 modes.
         n_modes_y       = 32,
-    ),
-)
+    ),)
 
 
 # loss function configurations. Losses without hyperparameters lambda, have an empty dict.
@@ -60,9 +55,3 @@ EVAL_CFG = dict(
 )
 
 
-#Helper function, assign automatically device for train and test just in case.
-def get_device(cfg: dict = TRAIN_CFG) -> str: 
-    if cfg["device"] == "auto":
-        import torch
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    return cfg["device"]
