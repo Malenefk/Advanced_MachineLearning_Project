@@ -23,9 +23,9 @@ This report highlights the strengths and weaknesses of different model architect
 - **Code**
   - *CNN & FNO:*
     Contains all the utilities and code for training the quasi-geostrophic turbulence model for the Convolutional Neural Network and for the Fourier Neural Operator.
-    Codes used in folder CNN_and_FNO are plug and play (as they are in the folder) and configured to use the pre-processed data file "t30.nc" (with no-spin up phase). To train, evalute and obtain metrices for each of the combinations of loss function for both FNO and UNET with "sweep.py", this can be run by CLI command "python sweep.py"
-    For separate training CLI code such as "python train.py --model X --loss Y", where X is the model name, either "fno" or "unet", and Y is name of the loss function either: "mse", "weighted_mse","mse_grad", "mse_mean_constraint" or "combined_physics"
-    Evaluation can be done by CLI code "python test.py --checkpoint sweep_results/X_Y/best_model.pt" Where Y and Y  also denote the name for the model and loss function, respectively.
+    Codes used in folder CNN_and_FNO are plug and play (as they are in the folder) and configured to use the pre-processed data file "t30.nc" directly (with no-spin up phase). To train, evalute and obtain metrices for each of the combinations of loss function for both FNO and UNET with "sweep.py", this can be run by CLI command "python sweep.py"
+    For separate training code such as "python train.py --model X --loss Y", where X is the model name, either "fno" or "unet", and Y is name of the loss function either: "mse", "weighted_mse","mse_grad", "mse_mean_constraint" or "combined_physics"
+    Evaluation can be done by code "python test.py --checkpoint sweep_results/X_Y/best_model.pt" Where X and Y also denote the name for the model and loss function, respectively.
 
   - *MovingAvg_baseline:* The moving average can be run by the CLI code "python moving_average_baseline.py". This uses the same pre-processed data file "t30.nc" and is also "plug and play" as it is in the folder.
 
