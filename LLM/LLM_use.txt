@@ -16,9 +16,9 @@ GCN section               | 2         | An LLM is used to provide structure in t
                           |           | implement certain structures used for tuning, such as Scheduled Sampling and delta forecasting.
 
 
-Moving Average baseline   | 4         | Baseline model for moving average has been conceptually evolved independently, whereas the code was                                                                           |           | merely developed with the use of Claude.ai for the sake of saving time and resources. To fit the                                                                              |           | existing utilities from dataset.py, metrics.py, and config.py. The file code has been sufficiently                                                                                          tested and verified
+Moving Average baseline   | 3         | Baseline model for moving average has been conceptually evolved independently, whereas the code was                                                                           |           | merely developed with the use of Claude.ai for the sake of saving time and resources. To fit the                                                                              |           | existing utilities from dataset.py, metrics.py, and config.py. The file code has been sufficiently                                                                                          tested and verified
 
-Validation                | 3/4       | Visualization and validation metrics were developed with LLM assistance from Claude. The ideas, methodology, and underlying codebase are ours. 
+Validation                |  3        | Visualization and validation metrics were developed with LLM assistance from Claude. The ideas, methodology, and underlying codebase are ours. 
 
 
 
